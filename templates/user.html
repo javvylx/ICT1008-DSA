@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ICT1008</title>
+        <script src="https://cdn.jsdelivr.net/npm/leaflet@1.5.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.5.1/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://rawcdn.githack.com/python-visualization/folium/master/folium/templates/leaflet.awesome.rotate.css"/>
+    <style>
+    #wrapper {
+        display: flex;
+    }
+
+    h2 {
+        margin: 0 !important;
+    }
+    </style>
+</head>
+<body>
+
+<div class="w-1/4 mr-8">
+        <form action="" method="post">
+        <div class="form-group">
+              <label for="start">Start Location:</label>
+              <input type="text" class="form-control" id="start" placeholder="What's your start location?">
+              <label for="end">End Location:</label>
+              <input type="text" class="form-control" id="end" placeholder="What's your end location?">
+        </div>
+
+        <button type="submit" class="btn btn-success">Search</button>
+        </form>
+</div>
+
+
+{% include 'gui_frontend.html' %}
+
+</body>
+</html>

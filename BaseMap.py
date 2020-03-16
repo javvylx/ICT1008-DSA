@@ -8,9 +8,10 @@ from IPython.display import IFrame
 
 punggol = (1.403948, 103.909048)
 G = ox.graph_from_point(punggol, distance=1000, truncate_by_edge=True, network_type="walk") # Network type there r different types of it, such as biking, driving, walking etc.
-n, e = ox.graph_to_gdfs(G) # Convert a graph into node and/or edge GeoDataFrames
-# n.to_csv('BuildingNodes.csv') # This converts edges in the map to coordinates in CSV format
-# e.to_csv('Edges.csv') # This converts edges in the map to coordinates in CSV format
+walkNode, e = ox.graph_to_gdfs(G) # Convert a graph into node and/or edge GeoDataFrames
+walkNode.to_csv('BuildingNodes.csv') # This converts edges in the map to coordinates in CSV format
+e.to_csv('Edges.csv') # This converts edges in the map to coordinates in CSV format
+
 
 start = (103.9073345, 1.4060506) # Sample start coordinates
 end = (103.9172982, 1.3956014) # Sample end coordinates
@@ -24,8 +25,7 @@ for i in range(0, len(nodelist_G)):
         end_osmid = nodelist_G[i].get('osmid')
 
 print(start_osmid, end_osmid) # Every Nodes in Open Street Map has an unique ID, this line will print the OSM ID of start and stop node and routing will be done
-
-
+print(walkNode)
 # Uncomment Line 29 and below to implement algorithm
 
 # def routing(start_osmid, end_osmid):
