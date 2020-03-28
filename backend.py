@@ -1,3 +1,4 @@
+from math import sin, cos, sqrt, atan2, radians, acos
 import math
 import json
 import heapq as hq
@@ -7,6 +8,7 @@ import folium as fol
 import geopandas as gpd
 import json
 import datetime
+from functools import partial
 
 punggol = gpd.read_file('geojson_files/map.geojson')
 polygon = punggol['geometry'].iloc[0]
@@ -17,8 +19,10 @@ BuildingsNodesFootPrint = ox.footprints.footprints_from_polygon(polygon, footpri
 driveGraph = ox.core.graph_from_polygon(polygon, truncate_by_edge=True, network_type="drive")
 plotBuildingNodes = ox.project_gdf(BuildingsNodesFootPrint)
 
-walkgraph = ox.graph_from_point((1.402777, 103.906493), distance=1500, network_type='walk', truncate_by_edge=True, simplify=False)
-drivegraph = ox.graph_from_point((1.402777, 103.906493), distance=1500, network_type='drive_service', truncate_by_edge=True,
+walkgraph = ox.graph_from_point((1.402777, 103.906493), distance=1500, network_type='walk', truncate_by_edge=True,
+                                simplify=False)
+drivegraph = ox.graph_from_point((1.402777, 103.906493), distance=1500, network_type='drive_service',
+                                 truncate_by_edge=True,
                                  simplify=False)
 
 # Convert a graph into node and/or edge GeoDataFrames
@@ -36,13 +40,13 @@ style_function = lambda feature: dict(
 driveGraphL = fol.GeoJson(driveEdge, name="Public Roads", style_function=style_function)
 driveGraphL.add_to(pgmap)
 
-walkEdgeL = fol.GeoJson(walkEdge, name="Walking Path",  style_function=style_function)
+walkEdgeL = fol.GeoJson(walkEdge, name="Walking Path", style_function=style_function)
 walkEdgeL.add_to(pgmap)
 
-lrtGraphL = fol.GeoJson(lrtEdge, name="LRT Track",  style_function=style_function)
+lrtGraphL = fol.GeoJson(lrtEdge, name="LRT Track", style_function=style_function)
 lrtGraphL.add_to(pgmap)
 
-fol.GeoJson(plotBuildingNodes, name='Buildings',  style_function=style_function).add_to(pgmap)
+fol.GeoJson(plotBuildingNodes, name='Buildings', style_function=style_function).add_to(pgmap)
 fol.LayerControl(collapsed=True).add_to(pgmap)
 
 logoIcon = fol.features.CustomIcon('images/siticon.png', icon_size=(40, 40))
@@ -104,6 +108,289 @@ def dijkstra(start, end, edgesdict, nodesdict):
                 hq.heappush(heap, (priority, node, new_path))
 
 
+westlrtstat = [[
+    1.4055940063199879,
+    103.90233993530273
+],
+    [
+        1.409026198275084,
+        103.90448570251465
+    ], [
+        1.415204131042014,
+        103.90774726867676
+    ], [
+        1.409026198275084,
+        103.90448570251465
+    ],
+    [
+        1.415204131042014,
+        103.90774726867676
+    ],
+    [
+        1.4166628072131071,
+        103.90736103057861
+    ],
+    [
+        1.417091829441639,
+        103.9063310623169
+    ],
+    [
+        1.4175852049061857,
+        103.90470027923584
+    ],
+    [
+        1.4164911982994481,
+        103.90240430831909
+    ],
+    [
+        1.4147965595948906,
+        103.90133142471312
+    ],
+    [
+        1.4118255760945477,
+        103.90031218528748
+    ],
+    [
+        1.408543546586684,
+        103.8985526561737
+    ],
+    [
+        1.405358042937595,
+        103.89726519584656
+    ],
+    [
+        1.4036848473606192,
+        103.89682531356812
+    ],
+    [
+        1.402290516798469,
+        103.90023708343506
+    ],
+    [
+        1.402934054084264,
+        103.90111684799194
+    ],
+    [
+        1.4055940063199879,
+        103.90233993530273
+    ]
+]
+eastlrtstat = [[
+    1.4055940063199879,
+    103.90233993530273
+],
+    [
+        1.4025264804904696,
+        103.90090227127075
+    ],
+    [
+        1.4017971380928607,
+        103.90124559402466
+    ],
+    [
+        1.3995662069962271,
+        103.90588045120239
+    ],
+    [
+        1.3970135043880965,
+        103.90892744064331
+    ],
+    [
+        1.393817259397357,
+        103.91270399093628
+    ],
+    [
+        1.3927446929915568,
+        103.91424894332886
+    ],
+    [
+        1.3929806576427364,
+        103.91491413116455
+    ],
+    [
+        1.3946538608547738,
+        103.91611576080321
+    ],
+    [
+        1.3974425302305653,
+        103.91811132431029
+    ],
+    [
+        1.3983434842446176,
+        103.91811132431029
+    ],
+    [
+        1.3996734633475383,
+        103.91637325286865
+    ],
+    [
+        1.402397773025064,
+        103.91266107559204
+    ],
+    [
+        1.405358042937595,
+        103.90849828720093
+    ],
+    [
+        1.408189601951655,
+        103.90433549880981
+    ],
+    [
+        1.407739126883896,
+        103.90356302261353
+    ],
+    [
+        1.4055940063199879,
+        103.90233993530273
+    ]
+]
+westduration = [2, 2, 1, 1, 1, 1, 3]
+eastduration = [3, 1, 1, 1, 1, 1, 1, 2]
+westlrtnodes = [[1.4055940063199879, 103.90233993530273], [1.409026198275084, 103.90448570251465],
+                [1.417091829441639, 103.9063310623169], [1.4164911982994481, 103.90240430831909],
+                [1.4118255760945477, 103.90031218528748], [1.408543546586684, 103.8985526561737],
+                [1.405358042937595, 103.89726519584656]]
+eastlrtnodes = [[1.4055940063199879, 103.90233993530273], [1.3995662069962271, 103.90588045120239],
+                [1.3970135043880965, 103.90892744064331], [1.393817259397357, 103.91270399093628],
+                [1.3946538608547738, 103.91611576080321], [1.3996734633475383, 103.91637325286865],
+                [1.402397773025064, 103.91266107559204], [1.405358042937595, 103.90849828720093]]
+
+ptc = fol.Marker(location=[1.4055940063199879, 103.90233993530273], popup='<strong>Punggol</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pw1 = fol.Marker(location=[1.409026198275084, 103.90448570251465], popup='<strong>Sam Kee</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pw3 = fol.Marker(location=[1.417091829441639, 103.9063310623169], popup='<strong>Punggol Point</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pw4 = fol.Marker(location=[1.4164911982994481, 103.90240430831909], popup='<strong>Samudera</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pw5 = fol.Marker(location=[1.4118255760945477, 103.90031218528748], popup='<strong>Nibong</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pw6 = fol.Marker(location=[1.408543546586684, 103.8985526561737], popup='<strong>Sumang</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pw7 = fol.Marker(location=[1.405358042937595, 103.89726519584656], popup='<strong>Soo Teck</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pe1 = fol.Marker(location=[1.3995662069962271, 103.90588045120239], popup='<strong>Cove</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pe2 = fol.Marker(location=[1.3970135043880965, 103.90892744064331], popup='<strong>Meridian</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pe3 = fol.Marker(location=[1.393817259397357, 103.91270399093628], popup='<strong>Coral Edge</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pe4 = fol.Marker(location=[1.3946538608547738, 103.91611576080321], popup='<strong>Riveria</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pe5 = fol.Marker(location=[1.3996734633475383, 103.91637325286865], popup='<strong>Kadaloor</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pe6 = fol.Marker(location=[1.402397773025064, 103.91266107559204], popup='<strong>Oasis</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pe7 = fol.Marker(location=[1.405358042937595, 103.90849828720093], popup='<strong>Damai</strong>',
+                 icon=fol.Icon(color='black', icon='train', prefix='fa'))
+pintag = []
+westpin = [ptc, pw1, pw3, pw4, pw5, pw6, pw7]
+eastpin = [ptc, pe1, pe2, pe3, pe4, pe5, pe6, pe7]
+
+
+def lrtrouting(start, end, lrtnodes, duration, lrtstat, pin):
+    forward = 0
+    reverse = 0
+    append = 0
+    test = []
+    sp = 0
+    ep = 0
+    node = []
+    for i in range(len(lrtnodes)):
+        if start == lrtnodes[i]:
+            sp = i
+        elif end == lrtnodes[i]:
+            ep = i
+        else:
+            continue
+    if ep < sp:
+        temp = sp
+        temp2 = start
+        sp = ep
+        start = end
+        ep = temp
+        end = temp2
+    for i in range(len(lrtnodes)):
+        if i >= sp and i < ep:
+            forward = forward + duration[i]
+        else:
+            reverse = reverse + duration[i]
+    if forward <= reverse:
+        for i in range(len(lrtstat)):
+            if start == lrtstat[i]:
+                append = 1
+            if append == 1:
+                node.append(lrtstat[i])
+            if end == lrtstat[i]:
+                append = 0
+                break
+    else:
+        for i in range(len(lrtstat)):
+            if end == lrtstat[i]:
+                append = 1
+            if append == 1:
+                node.append(lrtstat[i])
+        for i in range(len(lrtstat)):
+            if append == 1:
+                node.append(lrtstat[i])
+            if start == lrtstat[i]:
+                append = 0
+                break
+
+    for i in range(len(node)):
+        for j in range(len(lrtnodes)):
+            if node[i] == lrtnodes[j]:
+                pintag.append(pin[j])
+
+    return node
+
+
+def lrtroute(start, end):
+    global path1, path2
+    west = 0
+    east = 0
+    for i in range(len(westlrtnodes)):
+        if start == westlrtnodes[i]:
+            west = west + 1
+            stw = 'w'
+        if end == westlrtnodes[i]:
+            west = west + 1
+    for i in range(len(eastlrtnodes)):
+        if start == eastlrtnodes[i]:
+            east = east + 1
+            stw = 'e'
+        if end == eastlrtnodes[i]:
+            east = east + 1
+    if west == 2:
+        return lrtrouting(start, end, westlrtnodes, westduration, westlrtstat, westpin)
+    if east == 2:
+        return lrtrouting(start, end, eastlrtnodes, eastduration, eastlrtstat, eastpin)
+    if west == 1 and east == 1:
+        combopath = []
+        if stw == 'w':
+            path1 = lrtrouting(start, westlrtnodes[0], westlrtnodes, westduration, westlrtstat, westpin)
+            path2 = lrtrouting(eastlrtnodes[0], end, eastlrtnodes, eastduration, eastlrtstat, eastpin)
+        if stw == 'e':
+            path1 = lrtrouting(start, eastlrtnodes[0], eastlrtnodes, eastduration, eastlrtstat, eastpin)
+            path2 = lrtrouting(westlrtnodes[0], end, westlrtnodes, westduration, westlrtstat, westpin)
+        if path1[0] == [1.4055940063199879, 103.90233993530273]:
+            for i in range(0, len(path1) // 2):
+                temp = path1[i]
+                path1[i] = path1[len(path1) - 1 - i]
+                path1[len(path1) - 1 - i] = temp
+        for i in range(len(path1)):
+            combopath.append(path1[i])
+        if path2[-1] == [1.4055940063199879, 103.90233993530273]:
+            for i in range(0, len(path2) // 2):
+                temp = path2[i]
+                path2[i] = path2[len(path2) - 1 - i]
+                path2[len(path2) - 1 - i] = temp
+        for i in range(len(path2)):
+            combopath.append(path2[i])
+        print(combopath)
+        return combopath
+
+
 def calculateShortest(start_node, end_node, mode):
     if mode == "walking":
         path = dijkstra(start_node, end_node, walkedges, walknodes)
@@ -115,49 +402,55 @@ def calculateShortest(start_node, end_node, mode):
         # ox.plot_route_folium(pgmap, path, popup_attribute='length')
         # print(path)
         return convertToCoord(path, drivenodes)
+    elif mode == "lrt":
+        path = lrtroute(start_node, end_node)
+        return path
 
 
-start = (1.413006, 103.9073345)  # Sample start coordinates
-end = (1.3956014, 103.9172982)  # Sample end coordinates
-startmarker = fol.Marker(location=[1.413006, 103.913249], popup='<strong>Start Point</strong>')
-startmarker.add_to(pgmap)
-endmarker = fol.Marker(location=[1.3956014, 103.9172982], popup='<strong>End Point</strong>')
-endmarker.add_to(pgmap)
-start1 = (1.4133181, 103.9108787)
-end1 = (1.3984, 103.9072)
+def calculateDist(lat1, long1, lat2, long2):
+    radius = 6371.01
+    lat1 = radians(lat1)
+    long1 = radians(long1)
+    lat2 = radians(lat2)
+    long2 = radians(long2)
+    distance = radius * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(long1 - lat1))
+    distance = distance * 1000
+    return distance
 
-startmarker1 = fol.Marker(location=[1.4133181, 103.9108787], popup='<strong>Start Point 1</strong>')
-startmarker1.add_to(pgmap)
-endmarker1 = fol.Marker(location=[1.3984, 103.9072], popup='<strong>End Point 1</strong>')
-endmarker1.add_to(pgmap)
-# start = (103.9073345, 1.4060506) # Sample start coordinates
-# end = (103.9172982, 1.3956014) # Sample end coordinates
-start_node = str(ox.get_nearest_node(walkGraph, start, method='haversine'))
-print(start_node)
 
-end_node = str(ox.get_nearest_node(walkGraph, end, method='haversine'))
-print(end_node)
+def getNearestEdgeNode(osm_id, a):
+    y = a.nodes.get(osm_id).get('y')
+    x = a.nodes.get(osm_id).get('x')
+    nearest_edge = ox.get_nearest_edge(a, (y, x))
+    temp1 = nearest_edge[0].coords[0]
+    temp2 = nearest_edge[0].coords[1]
+    temp1x = temp1[0]
+    temp1y = temp1[1]
+    temp1dist = calculateDist(temp1y, temp1x, y, x)
+    temp2x = temp2[0]
+    temp2y = temp2[1]
+    temp2dist = calculateDist(temp2y, temp2x, y, x)
+    if temp1dist < temp2dist:
+        return nearest_edge[1]
+    else:
+        return nearest_edge[2]
 
-start_node1 = str(ox.get_nearest_node(driveGraph, start1, method='haversine'))
-print(start_node1)
 
-end_node1 = str(ox.get_nearest_node(driveGraph, end1, method='haversine'))
-print(end_node1)
+# lrtstation={"pw1":[1.4098, 103.9049],"pw2":[1.4165, 103.9068]}
+#
+# start = (1.4098, 103.9049)  # Sample start coordinates
+# end = (1.4045, 103.8970)  # Sample end coordinates
+# # start = (103.9073345, 1.4060506) # Sample start coordinates
+# # end = (103.9172982, 1.3956014) # Sample end coordinates
+# start_node = str(ox.get_nearest_node(lrtGraph, start, method='haversine'))
+# print(start_node)
+#
+# end_node = str(ox.get_nearest_node(lrtGraph, end, method='haversine'))
+# print(end_node)
 # start_node = '2274884613'
 # end_node=  '3057389878'
 # test = calculateShortest(start_node, end_node)
 # print(test)
-print("-----------------------------------------")
-tt = calculateShortest(start_node, end_node, "walking")
-print(tt)
-
-print("-----------------------------------------")
-ll = calculateShortest(start_node1, end_node1, "driving")
-print(ll)
-# WALK ROUTE
-fol.PolyLine(tt, color="red", weight=2.5, opacity=1).add_to(pgmap)
-# DRIVE ROUTE
-fol.PolyLine(ll, color='#3388ff', weight=2.5, opacity=1).add_to(pgmap)
 
 # origin_node = list(walkGraph.nodes)[2]
 # destination_node = list(walkGraph.nodes)[-1]
@@ -168,11 +461,11 @@ currentDT = datetime.datetime.now()
 print("Current time:")
 print(currentDT.strftime("%H%M"))
 # Get system time to coordinate which buses are available at the time
-current_time = int(currentDT.strftime("%H%M"))
-startPoint = "Aft Punggol Pt Stn"
-endPoint = "Coral Edge Stn Exit B"
-print("Start Point:\n", startPoint)
-print("End Point:\n", endPoint)
+current_time = 1200  # int(currentDT.strftime("%H%M"))
+# startBus = "Bef Punggol Dr"
+# endBus = "Coral Edge Stn Exit B"
+# print("Start Point:\n", startBus)
+# print("End Point:\n", endBus)
 
 # Load data from json
 myStop = json.loads(open("geojson_files/myStop.json").read())
@@ -239,63 +532,226 @@ def breadthFirst(graph, startPoint, endPoint):
             queue.put(new_path)
 
 
-path = breadthFirst(graph, stopDescription[startPoint]["BusStopCode"], stopDescription[endPoint]["BusStopCode"])
+def busRouting(startPoint, endPoint):
+    def getService(i):
+        for (service, direction), n in routes.items():
+            for j in range(len(n) - 1):
+                if path[i] == n[j]["BusStopCode"] and path[i + 1] == n[j + 1]["BusStopCode"]:
+                    return service, stopCodes[path[i]]["Description"], stopCodes[path[i]]["Latitude"], \
+                           stopCodes[path[i]]["Longitude"], stopCodes[path[i + 1]]["Description"], \
+                           stopCodes[path[i + 1]]["Latitude"], stopCodes[path[i + 1]]["Longitude"]
+
+    path = breadthFirst(graph, stopDescription[startPoint]["BusStopCode"], stopDescription[endPoint]["BusStopCode"])
+    print("")
+    start_bus = None
+    end_bus = None
+    last_node = None
+    busSummary = []
+    for i in range(len(path) - 1):
+        print(getService(i))
+
+        print(getService(i)[2])
+        print(getService(i)[3])
+        # mark bus stops on map
+        # start point
+        fol.Marker(location=[getService(i)[2], getService(i)[3]], tooltip=getService(i)[1],
+                   popup="Bus No. " + getService(i)[0],
+                   icon=fol.Icon(color='green', icon='bus', prefix='fa')).add_to(pgmap)
+        print(getService(i)[5])
+        print(getService(i)[6])
+        # end point
+        fol.Marker(location=[getService(i)[5], getService(i)[6]], tooltip=getService(i)[4],
+                   popup="Bus No. " + getService(i)[0],
+                   icon=fol.Icon(color='green', icon='bus', prefix='fa')).add_to(pgmap)
+
+        busStart = (getService(i)[2], getService(i)[3])
+        busEnd = (getService(i)[5], getService(i)[6])
+        start_bus = str(ox.get_nearest_node(drivegraph, busStart))
+        end_bus = str(ox.get_nearest_node(drivegraph, busEnd))
+        print(start_bus, end_bus)
+        if start_bus == end_bus:
+            fol.PolyLine(([float("{0:.7f}".format(getService(i)[2])), float("{0:.7f}".format(getService(i)[3]))],
+                          [float("{0:.7f}".format(getService(i)[5])), float("{0:.7f}".format(getService(i)[6]))]),
+                         color='green', weight=2.5, opacity=1).add_to(pgmap)
+            continue
+        else:
+            start_bus_x = drivenodes.get(start_bus)[0].get('lat')
+            start_bus_y = drivenodes.get(start_bus)[0].get('lon')
+            end_bus_x = drivenodes.get(end_bus)[0].get('lat')
+            end_bus_y = drivenodes.get(end_bus)[0].get('lon')
+            bus = calculateShortest(start_bus, end_bus, "driving")
+            print(bus)
+            if last_node is not None:
+                fol.PolyLine(([last_node[0], last_node[1]],
+                              [bus[0][0], bus[0][1]]),
+                             color='green', weight=2.5, opacity=1).add_to(pgmap)
+
+            fol.PolyLine(([start_bus_x, start_bus_y],
+                          [getService(i)[2], getService(i)[3]]),
+                         color='green', weight=2.5, opacity=1).add_to(pgmap)
+            fol.PolyLine(([getService(i)[5], getService(i)[6]], [end_bus_x, end_bus_y]),
+                         color='green', weight=2.5, opacity=1).add_to(pgmap)
+            last_node = bus[-1]
+            # start_bus_edge = getNearestEdgeNode(start_bus, drivegraph)
+            # end_bus_edge = getNearestEdgeNode(end_bus, drivegraph)
+
+            # print(bus)
+            fol.PolyLine(bus, color='green', weight=2.5, opacity=1).add_to(pgmap)
+            busSummary.append(getService(i))
+            if i == 0:
+                fol.Marker(location=[getService(i)[2], getService(i)[3]], tooltip=getService(i)[1],
+                           popup="Bus No. " + getService(i)[0],
+                           icon=fol.Icon(color='blue', icon='bus', prefix='fa')).add_to(pgmap)
+            if i == len(path) - 2:
+                fol.Marker(location=[getService(i)[5], getService(i)[6]], tooltip=getService(i)[4],
+                           popup="Bus No. " + getService(i)[0],
+                           icon=fol.Icon(color='red', icon='bus', prefix='fa')).add_to(pgmap)
+        print(busSummary)
+        print(len(path), "stops")
 
 
-def getService(i):
-    for (service, direction), n in routes.items():
-        for j in range(len(n)-1):
-            if path[i] == n[j]["BusStopCode"] and path[i+1] == n[j+1]["BusStopCode"]:
-                return service, stopCodes[path[i]]["Description"], stopCodes[path[i]]["Latitude"], \
-                       stopCodes[path[i]]["Longitude"],  stopCodes[path[i + 1]]["Description"], \
-                       stopCodes[path[i+1]]["Latitude"], stopCodes[path[i+1]]["Longitude"]
+# busRouting(startBus, endBus)
+
+# print("=================================================================")
+# print(bus)
+
+# -------------------------------------------------------------------------------------------------
+# fol.PolyLine(([float("{0:.7f}".format(getService(i)[2])), float("{0:.7f}".format(getService(i)[3]))],
+#               [float("{0:.7f}".format(getService(i)[5])), float("{0:.7f}".format(getService(i)[6]))]),
+#              color='green', weight=2.5, opacity=1).add_to(pgmap)
+# -------------------------------------------------------------------------------------------------
+
+# if i == 0:
+#     start_bus = str(ox.get_nearest_node(drivegraph, busStart, method='haversine'))
+#     print("this is start")
+#     print(start_bus)
+# if i == int((len(path)-2)/4):
+#     end_bus = str(ox.get_nearest_node(drivegraph, busEnd, method='haversine'))
+#     print("this is end")
+#     print(end_bus)
+#
+# if start_bus and end_bus is not None:
+#     print("-----------------------------------------")
+#     print(start_bus, end_bus)
+#     bus = calculateShortest(start_bus, end_bus, "driving")
+#     fol.PolyLine(bus, color='green', weight=2.5, opacity=1).add_to(pgmap)
 
 
-print("")
-start_bus = None
-end_bus = None
-for i in range(len(path) - 1):
-    print(getService(i))
+def find_nearest(points, coor):
+    dist = lambda s, key: (s[0] - points[key][0]) ** 2 + (s[1] - points[key][1]) ** 2
+    return min(points, key=partial(dist, coor))
 
-    print(getService(i)[2])
-    print(getService(i)[3])
-    # mark bus stops on map
-    # start point
-    fol.Marker(location=[getService(i)[2], getService(i)[3]], popup=getService(i)[1], icon=fol.Icon(color='red', icon='info-sign')).add_to(pgmap)
-    print(getService(i)[5])
-    print(getService(i)[6])
-    # end point
-    fol.Marker(location=[getService(i)[5], getService(i)[6]], popup=getService(i)[4], icon=fol.Icon(color='red', icon='info-sign')).add_to(pgmap)
 
-    busStart = (getService(i)[2], getService(i)[3])
-    busEnd = (getService(i)[5], getService(i)[6])
-    start_bus = str(ox.get_nearest_edge(drivegraph, busStart))
-    end_bus = str(ox.get_nearest_edge(drivegraph, busEnd))
-    print(start_bus, end_bus)
-    # bus = calculateShortest(start_bus, end_bus, "driving")
-    # print("=================================================================")
-    # print(bus)
+keys = []
+values = []
+for i in range(len(myStop)):
+    keys.append(myStop[i].get("Description"))
+    t = ()
+    t = (myStop[i].get('Latitude'), myStop[i].get('Longitude'))
+    values.append(t)
 
-    # -------------------------------------------------------------------------------------------------
-    # fol.PolyLine(([float("{0:.7f}".format(getService(i)[2])), float("{0:.7f}".format(getService(i)[3]))],
-    #               [float("{0:.7f}".format(getService(i)[5])), float("{0:.7f}".format(getService(i)[6]))]),
-    #              color='green', weight=2.5, opacity=1).add_to(pgmap)
-    # -------------------------------------------------------------------------------------------------
+graph_dict = dict(zip(keys, values))
 
-    # if i == 0:
-    #     start_bus = str(ox.get_nearest_node(drivegraph, busStart, method='haversine'))
-    #     print("this is start")
-    #     print(start_bus)
-    # if i == int((len(path)-2)/4):
-    #     end_bus = str(ox.get_nearest_node(drivegraph, busEnd, method='haversine'))
-    #     print("this is end")
-    #     print(end_bus)
-    #
-    # if start_bus and end_bus is not None:
-    #     print("-----------------------------------------")
-    #     print(start_bus, end_bus)
-    #     bus = calculateShortest(start_bus, end_bus, "driving")
-    #     fol.PolyLine(bus, color='green', weight=2.5, opacity=1).add_to(pgmap)
 
-print(len(path), "stops")
+def walkPlusBus(startbus1, endbus1):
+    startbus1 = find_nearest(graph_dict, start1)
+    print(startbus1)
+    endbus1 = find_nearest(graph_dict, end1)
+    print(endbus1)
+
+    start_bus_coord = graph_dict.get(startbus1)
+    end_bus_coord = graph_dict.get(endbus1)
+
+    fol.Marker(location=[start1[0], start1[1]], popup='<strong>Start Point</strong>', icon=fol.Icon(color='blue')).add_to(
+        pgmap)
+    fol.Marker(location=[end1[0], end1[1]], popup='<strong>End Point</strong>', icon=fol.Icon(color='red')).add_to(pgmap)
+
+    start_node1 = str(ox.get_nearest_node(walkgraph, start1, method='haversine'))
+    end_node1 = str(ox.get_nearest_node(walkgraph, end1, method='haversine'))
+
+    start_bus_node = str(ox.get_nearest_node(walkgraph, start_bus_coord, method='haversine'))
+    end_bus_node = str(ox.get_nearest_node(walkgraph, end_bus_coord, method='haversine'))
+
+    start_to_bus = calculateShortest(start_node1, start_bus_node, "walking")
+    bus_to_end = calculateShortest(end_bus_node, end_node1, "walking")
+
+    fol.PolyLine(
+        ([start1[0], start1[1]], [walknodes.get(start_node1)[0].get('lat'), walknodes.get(start_node1)[0].get('lon')]),
+        color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
+    fol.PolyLine(([walknodes.get(end_node1)[0].get('lat'), walknodes.get(end_node1)[0].get('lon')], [end1[0], end1[1]]),
+                 color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
+
+    fol.PolyLine(start_to_bus, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
+    fol.PolyLine(bus_to_end, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
+
+    busRouting(startbus1, endbus1)
+
+
+def walking(start, end):
+    startmarker = fol.Marker(location=[start[0], start[1]], popup='<strong>Walking Start Point</strong>',
+                             tooltip="Start", icon=fol.Icon(color='blue', icon='male', prefix='fa'))
+    startmarker.add_to(pgmap)
+    endmarker = fol.Marker(location=[end[0], end[1]], popup='<strong>Walking End Point</strong>',
+                           tooltip="End", icon=fol.Icon(color='red', icon='male', prefix='fa'))
+    endmarker.add_to(pgmap)
+    start_node = str(ox.get_nearest_node(walkGraph, start, method='haversine'))
+    print(start_node)
+    end_node = str(ox.get_nearest_node(walkGraph, end, method='haversine'))
+    print(end_node)
+    print("-----------------------------------------")
+    tt = calculateShortest(start_node, end_node, "walking")
+    print(tt)
+    # WALK ROUTE
+    fol.PolyLine(tt, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def driving(start1, end1):
+    startmarker1 = fol.Marker(location=[start1[0], start1[1]], popup='<strong>Driving Start Point</strong>',
+                              tooltip="Start", icon=fol.Icon(color='blue', icon='car', prefix='fa'))
+    startmarker1.add_to(pgmap)
+    endmarker1 = fol.Marker(location=[end1[0], end1[1]],  popup='<strong>Driving End Point</strong>',
+                            tooltip="End", icon=fol.Icon(color='red', icon='car', prefix='fa'))
+    endmarker1.add_to(pgmap)
+    start_node1 = str(ox.get_nearest_node(driveGraph, start1, method='haversine'))
+    end_node1 = str(ox.get_nearest_node(driveGraph, end1, method='haversine'))
+    print("-----------------------------------------")
+    ll = calculateShortest(start_node1, end_node1, "driving")
+    print(ll)
+    # DRIVE ROUTE
+    fol.PolyLine(ll, color='red', weight=2.5, opacity=1).add_to(pgmap)
+
+
+def lrt(st, en):
+    st1 = [st[0], st[1]]
+    en1 = [en[0], en[1]]
+    tt = calculateShortest(st1, en1, "lrt")
+    pinning = []
+    for x in pintag:  # check if exists in unique_list or not
+        if x not in pinning:
+            pinning.append(x)
+    for i in range(len(pinning)):
+        pinning[i].add_to(pgmap)
+
+    fol.PolyLine(tt, color="black", weight=2.5, opacity=1).add_to(pgmap)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+start = (1.413006, 103.9073345)
+end = (1.3956014, 103.9172982)
+walking(start, end)
+# ----------------------------------------------------------------------------------------------------------------------4
+start1 = (1.4133181, 103.9108787)
+end1 = (1.3984, 103.9072)
+driving(start1, end1)
+# ----------------------------------------------------------------------------------------------------------------------
+start1 = (1.4163786, 103.9007089)
+end1 = (1.3936582, 103.9112658)
+walkPlusBus(start1, end1)
+# ---------------------------------------------------------------------------------------------------------------------
+st = (1.4055940063199879, 103.90233993530273)
+en = (1.408543546586684, 103.8985526561737)
+lrt(st, en)
+# ----------------------------------------------------------------------------------------------------------------------
+
 pgmap.save('templates/gui_frontend.html')
