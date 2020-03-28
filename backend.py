@@ -9,6 +9,7 @@ import geopandas as gpd
 import json
 import datetime
 from functools import partial
+from flask_control_start import start, stop
 
 punggol = gpd.read_file('geojson_files/map.geojson')
 polygon = punggol['geometry'].iloc[0]
@@ -27,6 +28,7 @@ drivegraph = ox.graph_from_point((1.402777, 103.906493), distance=1500, network_
 
 # Convert a graph into node and/or edge GeoDataFrames
 walkNode, walkEdge = ox.graph_to_gdfs(walkGraph)
+walk = list(walkGraph.nodes.values())
 driveNode, driveEdge = ox.graph_to_gdfs(driveGraph)
 lrtNode, lrtEdge = ox.graph_to_gdfs(lrtGraph)
 
@@ -75,6 +77,11 @@ def convertToCoord(path, nodes):
         route.append([nodes[id][0]['lat'], nodes[id][0]['lon']])
     return route
     # return a list of coordinates to plot
+
+def convertOSMIDtoLL(userInput):
+    for k in walk:
+        if k.get("osmid") == userInput:
+            return str(k.get("x")), str(k.get("y"))
 
 
 # A* algorithm (priority)f(s) = (cost)g(s) + h(s)(estimation of remaining cost - heuristic)
@@ -654,6 +661,8 @@ graph_dict = dict(zip(keys, values))
 
 
 def walkPlusBus(startbus1, endbus1):
+    startpoint = ox.geocode(src1)
+    endpoint = ox.geocode(des1)
     startbus1 = find_nearest(graph_dict, start1)
     print(startbus1)
     endbus1 = find_nearest(graph_dict, end1)
@@ -662,9 +671,11 @@ def walkPlusBus(startbus1, endbus1):
     start_bus_coord = graph_dict.get(startbus1)
     end_bus_coord = graph_dict.get(endbus1)
 
-    fol.Marker(location=[start1[0], start1[1]], popup='<strong>Start Point</strong>', icon=fol.Icon(color='blue')).add_to(
+    fol.Marker(location=[start1[0], start1[1]], popup='<strong>Start Point</strong>',
+               icon=fol.Icon(color='blue')).add_to(
         pgmap)
-    fol.Marker(location=[end1[0], end1[1]], popup='<strong>End Point</strong>', icon=fol.Icon(color='red')).add_to(pgmap)
+    fol.Marker(location=[end1[0], end1[1]], popup='<strong>End Point</strong>', icon=fol.Icon(color='red')).add_to(
+        pgmap)
 
     start_node1 = str(ox.get_nearest_node(walkgraph, start1, method='haversine'))
     end_node1 = str(ox.get_nearest_node(walkgraph, end1, method='haversine'))
@@ -687,34 +698,40 @@ def walkPlusBus(startbus1, endbus1):
     busRouting(startbus1, endbus1)
 
 
-def walking(start, end):
-    startmarker = fol.Marker(location=[start[0], start[1]], popup='<strong>Walking Start Point</strong>',
+def walking(src, des):
+    startpoint = ox.geocode(src)
+    endpoint = ox.geocode(des)
+    startmarker = fol.Marker(location=startpoint, popup='<strong>Walking Start Point</strong>',
                              tooltip="Start", icon=fol.Icon(color='blue', icon='male', prefix='fa'))
     startmarker.add_to(pgmap)
-    endmarker = fol.Marker(location=[end[0], end[1]], popup='<strong>Walking End Point</strong>',
+    endmarker = fol.Marker(location=endpoint, popup='<strong>Walking End Point</strong>',
                            tooltip="End", icon=fol.Icon(color='red', icon='male', prefix='fa'))
     endmarker.add_to(pgmap)
-    start_node = str(ox.get_nearest_node(walkGraph, start, method='haversine'))
+    start_node = str(ox.get_nearest_node(walkGraph, startpoint, method='haversine'))
     print(start_node)
-    end_node = str(ox.get_nearest_node(walkGraph, end, method='haversine'))
+    end_node = str(ox.get_nearest_node(walkGraph, endpoint, method='haversine'))
     print(end_node)
     print("-----------------------------------------")
     tt = calculateShortest(start_node, end_node, "walking")
     print(tt)
     # WALK ROUTE
     fol.PolyLine(tt, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def driving(start1, end1):
-    startmarker1 = fol.Marker(location=[start1[0], start1[1]], popup='<strong>Driving Start Point</strong>',
+def driving(src1, des1):
+    startpoint1 = ox.geocode(src1)
+    endpoint1 = ox.geocode(des1)
+    startmarker1 = fol.Marker(location=startpoint1, popup='<strong>Driving Start Point</strong>',
                               tooltip="Start", icon=fol.Icon(color='blue', icon='car', prefix='fa'))
     startmarker1.add_to(pgmap)
-    endmarker1 = fol.Marker(location=[end1[0], end1[1]],  popup='<strong>Driving End Point</strong>',
+    endmarker1 = fol.Marker(location=endpoint1, popup='<strong>Driving End Point</strong>',
                             tooltip="End", icon=fol.Icon(color='red', icon='car', prefix='fa'))
     endmarker1.add_to(pgmap)
-    start_node1 = str(ox.get_nearest_node(driveGraph, start1, method='haversine'))
-    end_node1 = str(ox.get_nearest_node(driveGraph, end1, method='haversine'))
+    start_node1 = str(ox.get_nearest_node(driveGraph, startpoint1, method='haversine'))
+    end_node1 = str(ox.get_nearest_node(driveGraph, endpoint1, method='haversine'))
     print("-----------------------------------------")
     ll = calculateShortest(start_node1, end_node1, "driving")
     print(ll)
@@ -736,22 +753,54 @@ def lrt(st, en):
     fol.PolyLine(tt, color="black", weight=2.5, opacity=1).add_to(pgmap)
 
 
+# Geocoding starts here
+
+# src = "406B, Northshore Drive, Punggol"
+# des = "Blk 126D, Punggol Field, Punggol"  # random hdb 60 Punggol East, Singapore 828825
+# startpoint = ox.geocode(src)
+# print(startpoint)
+# endpoint = ox.geocode(des)
+# print(endpoint)
+#
+# start_node = ox.get_nearest_node(walkGraph, startpoint, method='haversine', return_dist=False)
+#
+# end_node = ox.get_nearest_node(walkGraph, endpoint, method='haversine', return_dist=False)
+# print(end_node)
+#
+# test = convertOSMIDtoLL(start_node)
+# print(test)
+# test2 = convertOSMIDtoLL(end_node)
+# print(test2)
+#
+# startmarker = fol.Marker(location=startpoint, popup='<strong>Start Point 10</strong>')
+# startmarker.add_to(pgmap)
+#
+# endmarker = fol.Marker(location=endpoint, popup='<strong>End Point 10</strong>')
+# endmarker.add_to(pgmap)
+
 # ----------------------------------------------------------------------------------------------------------------------
-start = (1.413006, 103.9073345)
-end = (1.3956014, 103.9172982)
-walking(start, end)
+# start = (1.413006, 103.9073345)
+# end = (1.3956014, 103.9172982)
+# walking(start, end)
+
+# src = "406B, Northshore Drive, Punggol"
+# des = "Blk 126D, Punggol Field, Punggol"
+
+walkingSrc = start()
+walkingDes = stop()
+walking(walkingSrc, walkingDes)
 # ----------------------------------------------------------------------------------------------------------------------4
-start1 = (1.4133181, 103.9108787)
-end1 = (1.3984, 103.9072)
-driving(start1, end1)
+# drivingSrc = ""
+# drivingDes = ""
+# driving(drivingSrc, drivingDes)
 # ----------------------------------------------------------------------------------------------------------------------
-start1 = (1.4163786, 103.9007089)
-end1 = (1.3936582, 103.9112658)
-walkPlusBus(start1, end1)
+# walkPlusBusSrc = "Oasis Primary School, 71, Edgefield Plains, Punggol, Northeast, 828716, Singapore"
+# walkPlusBusEnd = "Northshore Trio, 411, Northshore Drive, Punggol, Northeast, 820411, Singapore"
+# walkPlusBus(walkPlusBusSrc, walkPlusBusEnd)
 # ---------------------------------------------------------------------------------------------------------------------
-st = (1.4055940063199879, 103.90233993530273)
-en = (1.408543546586684, 103.8985526561737)
-lrt(st, en)
+# st = (1.4055940063199879, 103.90233993530273)
+# en = (1.408543546586684, 103.8985526561737)
+# lrt(st, en)
 # ----------------------------------------------------------------------------------------------------------------------
 
 pgmap.save('templates/gui_frontend.html')
