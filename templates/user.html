@@ -38,26 +38,30 @@
                 </div>
 
             </div>
+                  <b><p>Please select routing type:</p></b>
+                  <input type="radio" id="walkRouting" name="buttonType" value="walkRouting">
+                  <label for="walkRouting">Walk Routing</label><br>
+                  <input type="radio" id="busRouting" name="buttonType" value="busRouting">
+                  <label for="busRouting">Bus Routing</label><br>
+                  <input type="radio" id="lrtRouting" name="buttonType" value="lrtRouting">
+                  <label for="lrtRouting">LRT Routing</label>
+              <br>
         <button type="submit" class="btn btn-success" id="searchButton">Search</button>
         </form>
         <div id="result">
             <h4><span class="fa fa-map"></span> Directions</h4>
-            <tr id="direction">
-                <td id="walk">
-                    <button type="submit" class="btn btn-primary fa fa-heartbeat" id="walkButton"></button>
-                </td>
-                <td id="bus">
-                    <button type="submit" class="btn btn-primary fa fa-bus" id="busButton"></button>
-                </td>
-                <td id="lrt">
-                    <button type="submit" class="btn btn-primary fa fa-subway" id="lrtButton"></button>
-                </td>
-            </tr>
-        </div>
-        <br>
+            <br>
         <div style = "height : 500px"class="panel panel-default">
-            <div class="panel-body">Results will populate in here (TODO)</div>
+                <div class="panel-body">
+                    <b>Start Location:</b> <br>{{startInput}}
+                    <br> <b>End Location:</b><br> {{endInput}}
+                    <br> <b>Distance (km):</b><br>{{dist}}
+                    <br> <b>Time to reach (mins):</b> <br>{{time}}
+<!--                    {{data}}-->
+                </div>
+            </div>
         </div>
+
     </div>
 </div>
 
