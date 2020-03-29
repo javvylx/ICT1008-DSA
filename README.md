@@ -11,7 +11,7 @@ https://github.com/javvylx/1008-DSA/archive/master.zip
 
 
 ### Prerequisites
-* [Anaconda Enviroment](https://www.anaconda.com/distribution/) - The all in one python package manager and deployment tool kit 
+* [Anaconda Environment](https://www.anaconda.com/distribution/) - The all in one python package manager and deployment tool kit 
 * [Python 3.7](https://www.python.org/downloads/release/python-370/) - Base Python Interpreter 
 * [Pycharm Community](https://www.jetbrains.com/pycharm/download/download-thanks.html?platform=windows&code=PCC) - Python IDE for professional developer
 
@@ -19,8 +19,8 @@ https://github.com/javvylx/1008-DSA/archive/master.zip
 ### Installing
 Make sure the above prerequisities are installed before continuing 
 
-**Step 1:** Creation of anaconda python enviroment
-Open Anaconda Navigator -> Navigate to Enviroments  
+**Step 1:** Creation of anaconda python environment
+Open Anaconda Navigator -> Navigate to enviroments  
 -> Create -> Select Python package: 3.7
 
 **Step 2:** Installation of packages/libraries
