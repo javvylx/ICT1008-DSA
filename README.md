@@ -1,5 +1,5 @@
 # SIT ICT 1008 AY19/20 DSA Project
-This is a Data Structure Algorithm project that is to develop a map application using Folium and OSMNX to guide the residents in Punggol to travel easily within one kilometre of Punggol area. 
+This is a Year 1 Trimester 2 ICT 1008 - Data Structure Algorithm project. This project is to develop a Map application with algorithms using Folium and OSMNX to guide the residents in Punggol to travel easily within one kilometre of Punggol area. 
 
 There are currently two huge and crucial parts of the project:
 - Finding the fastest route / shortest / least transfers route from one point to another point using data structure algorithms
