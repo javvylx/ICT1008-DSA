@@ -49,17 +49,16 @@ lrtNode, lrtEdge = ox.graph_to_gdfs(lrtGraph)
 # fol.GeoJson(plotBuildingNodes, name='Buildings', style_function=style_function).add_to(pgmap)
 # fol.LayerControl(collapsed=True).add_to(pgmap)
 
-def sitMarker():
+pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
+                       truncate_by_edge=True)
+
+pgmap.save('templates/gui_frontend.html')
+
+def sitMarker(pgmap):
     logoIcon = fol.features.CustomIcon('images/siticon.png', icon_size=(40, 40))
     SITtooltip = fol.Marker(location=[1.413006, 103.913249], popup='<strong>SIT New Punggol Campus</strong>',
                             icon=logoIcon)
     SITtooltip.add_to(pgmap)
-
-
-# Base Map
-pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15, truncate_by_edge=True)
-sitMarker()
-
 
 def importFiles(edgepath, nodepath):
     with open(nodepath) as f:  # data/walknodes.geojson
@@ -473,11 +472,14 @@ def getNearestEdgeNode(osm_id, a):
 # route = nx.shortest_path(pgmap, origin_node, destination_node)
 
 
-currentDT = datetime.datetime.now()
 # print("Current time:")
 # print(currentDT.strftime("%H%M"))
 # Get system time to coordinate which buses are available at the time
-current_time = 1200  # int(currentDT.strftime("%H%M"))
+# ---------------------------------------------------------------------------------
+currentDT = datetime.datetime.now()
+# current_time = int(currentDT.strftime("%H%M"))
+current_time = 1200
+# -------------------------------------------------------------------------------
 # startBus = "Bef Punggol Dr"
 # endBus = "Coral Edge Stn Exit B"
 # print("Start Point:\n", startBus)
@@ -548,9 +550,7 @@ def breadthFirst(graph, startPoint, endPoint):
             queue.put(new_path)
 
 
-def busRouting(startPoint, endPoint):
-    pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15, truncate_by_edge=True)
-
+def busRouting(startPoint, endPoint, pgmap):
     def getService(i):
         for (service, direction), n in routes.items():
             for j in range(len(n) - 1):
@@ -565,6 +565,7 @@ def busRouting(startPoint, endPoint):
     end_bus = None
     last_node = None
     busSummary = []
+    dist = 0
     for i in range(len(path) - 1):
         print(getService(i))
 
@@ -591,6 +592,7 @@ def busRouting(startPoint, endPoint):
             fol.PolyLine(([float("{0:.7f}".format(getService(i)[2])), float("{0:.7f}".format(getService(i)[3]))],
                           [float("{0:.7f}".format(getService(i)[5])), float("{0:.7f}".format(getService(i)[6]))]),
                          color='green', weight=2.5, opacity=1).add_to(pgmap)
+            pgmap.save('templates/gui_frontend.html')
             continue
         else:
             start_bus_x = drivenodes.get(start_bus)[0].get('lat')
@@ -599,6 +601,10 @@ def busRouting(startPoint, endPoint):
             end_bus_y = drivenodes.get(end_bus)[0].get('lon')
             bus = calculateShortest(start_bus, end_bus, "driving")
             print(bus)
+
+            for m in range(len(bus) - 1):
+                dist = dist + calculateDist(float(bus[m][0]), float(bus[m][1]), float(bus[m + 1][0]), float(bus[m + 1][1]))
+
             if last_node is not None:
                 fol.PolyLine(([last_node[0], last_node[1]],
                               [bus[0][0], bus[0][1]]),
@@ -609,6 +615,8 @@ def busRouting(startPoint, endPoint):
                          color='green', weight=2.5, opacity=1).add_to(pgmap)
             fol.PolyLine(([getService(i)[5], getService(i)[6]], [end_bus_x, end_bus_y]),
                          color='green', weight=2.5, opacity=1).add_to(pgmap)
+            # pgmap.save('templates/gui_frontend.html')
+
             last_node = bus[-1]
             # start_bus_edge = getNearestEdgeNode(start_bus, drivegraph)
             # end_bus_edge = getNearestEdgeNode(end_bus, drivegraph)
@@ -620,12 +628,21 @@ def busRouting(startPoint, endPoint):
                 fol.Marker(location=[getService(i)[2], getService(i)[3]], tooltip=getService(i)[1],
                            popup="Bus No. " + getService(i)[0],
                            icon=fol.Icon(color='blue', icon='bus', prefix='fa')).add_to(pgmap)
+                # pgmap.save('templates/gui_frontend.html')
             if i == len(path) - 2:
                 fol.Marker(location=[getService(i)[5], getService(i)[6]], tooltip=getService(i)[4],
                            popup="Bus No. " + getService(i)[0],
                            icon=fol.Icon(color='red', icon='bus', prefix='fa')).add_to(pgmap)
-        print(busSummary)
-        print(len(path), "stops")
+    pgmap.save('templates/gui_frontend.html')
+    time = dist / 35 * 60
+    cleanDist = str(round(dist, 2))
+    cleanTime = str(round(time, 2))
+    print(cleanDist)
+    print(cleanTime)
+    busArray = [cleanDist, cleanTime]
+    print(busSummary)
+    print(len(path), "stops")
+    return busSummary, len(path), busArray
 
 
 # busRouting(startBus, endBus)
@@ -673,6 +690,7 @@ graph_dict = dict(zip(keys, values))
 
 def walkPlusBus(src1, des1):
     pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15, truncate_by_edge=True)
+    sitMarker(pgmap)
     startbus1coord = (float(ox.geocode(src1)[0]), float(ox.geocode(src1)[1]))
     endbus1coord = (float(ox.geocode(des1)[0]), float(ox.geocode(des1)[1]))
     print(startbus1coord)
@@ -685,12 +703,6 @@ def walkPlusBus(src1, des1):
     start_bus_coord = graph_dict.get(startbus1)
     end_bus_coord = graph_dict.get(endbus1)
 
-    fol.Marker(location=[startbus1coord[0], startbus1coord[1]], popup='<strong>Start Point</strong>',
-               icon=fol.Icon(color='blue')).add_to(pgmap)
-    fol.Marker(location=[endbus1coord[0], endbus1coord[1]], popup='<strong>End Point</strong>',
-               icon=fol.Icon(color='red')) \
-        .add_to(pgmap)
-
     start_node1 = str(ox.get_nearest_node(walkgraph, startbus1coord, method='haversine'))
     end_node1 = str(ox.get_nearest_node(walkgraph, endbus1coord, method='haversine'))
 
@@ -700,6 +712,15 @@ def walkPlusBus(src1, des1):
     start_to_bus = calculateShortest(start_node1, start_bus_node, "walking")
     bus_to_end = calculateShortest(end_bus_node, end_node1, "walking")
 
+    walktobusStatement = "Walk from Start Point: " + src1 + " to " + str(startbus1) + " Bus Stop"
+    bustoendStatement = "Walk from " + str(endbus1) + " Bus Stop to End Point: " + des1
+
+    data = busRouting(startbus1, endbus1, pgmap)
+
+    fol.Marker(location=[startbus1coord[0], startbus1coord[1]], popup=src1, tooltip="Start Point",
+               icon=fol.Icon(color='blue')).add_to(pgmap)
+    fol.Marker(location=[endbus1coord[0], endbus1coord[1]], popup=des1, tooltip='End Point',
+               icon=fol.Icon(color='red')).add_to(pgmap)
     fol.PolyLine(
         ([startbus1coord[0], startbus1coord[1]],
          [walknodes.get(start_node1)[0].get('lat'), walknodes.get(start_node1)[0].get('lon')]),
@@ -707,11 +728,27 @@ def walkPlusBus(src1, des1):
     fol.PolyLine(([walknodes.get(end_node1)[0].get('lat'), walknodes.get(end_node1)[0].get('lon')],
                   [endbus1coord[0], endbus1coord[1]]),
                  color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
-
     fol.PolyLine(start_to_bus, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
     fol.PolyLine(bus_to_end, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
+    pgmap.save('templates/gui_frontend.html')
 
-    busRouting(startbus1, endbus1)
+    dist = 0
+    for m in range(len(start_to_bus) - 1):
+        dist = dist + calculateDist(float(start_to_bus[m][0]), float(start_to_bus[m][1]), float(start_to_bus[m + 1][0]), float(start_to_bus[m + 1][1]))
+    time = dist / 5 * 60
+    cleanDist = str(round(dist, 2))
+    cleanTime = str(round(time, 2))
+    walktobusDist = [cleanDist, cleanTime]
+
+    dist1 = 0
+    for m in range(len(bus_to_end) - 1):
+        dist1 = dist1 + calculateDist(float(bus_to_end[m][0]), float(bus_to_end[m][1]), float(bus_to_end[m + 1][0]), float(bus_to_end[m + 1][1]))
+    time1 = dist1 / 5 * 60
+    cleanDist1 = str(round(dist1, 2))
+    cleanTime1 = str(round(time1, 2))
+    bustoendDist = [cleanDist1, cleanTime1]
+    pgmap.save('templates/gui_frontend.html')
+    return data, walktobusStatement, bustoendStatement, walktobusDist, bustoendDist
 
 
 def walking(src, des):
@@ -778,6 +815,7 @@ def driving(src1, des1):
     driveArray = [cleanDist, cleanTime]
     # DRIVE ROUTE
     fol.PolyLine(ll, color='red', weight=2.5, opacity=1).add_to(pgmap)
+    pgmap.save('templates/gui_frontend.html')
     return driveArray
 
 
@@ -861,13 +899,13 @@ def drivingBackEnd(startInput, endInput):
         pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
                                truncate_by_edge=True)
         pgmap.save('templates/gui_frontend.html')
-        sitMarker()
+        sitMarker(pgmap)
         return "Routing out address is out of the range of the project scope"
     except ValueError:
         pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
                                truncate_by_edge=True)
         pgmap.save('templates/gui_frontend.html')
-        sitMarker()
+        sitMarker(pgmap)
         return "Locations cannot be the same! Please try a different location for Start and End Point"
 
 
@@ -875,20 +913,45 @@ def drivingBackEnd(startInput, endInput):
 def walkPlusBusBackEnd(startInput, endInput):
     walkPlusBusSrc = startInput
     walkPlusBusEnd = endInput
+    if walkPlusBusSrc == walkPlusBusEnd:
+        pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
+                               truncate_by_edge=True)
+        sitMarker(pgmap)
+        pgmap.save('templates/gui_frontend.html')
+        return "Locations cannot be the same! Please try a different location for Start and End Point"
     try:
-        walkPlusBus(walkPlusBusSrc, walkPlusBusEnd)
+        data = walkPlusBus(walkPlusBusSrc, walkPlusBusEnd)
         # pgmap.save('templates/gui_frontend.html')
+        print("------------------------------******************")
+        print(data)
+        buslist = data[0][0]
+        noofstops = data[0][1]
+        dis = data[0][2]
+        distance = dis[0]
+        time = dis[1]
+        walkstmtstrt = data[1]
+        walkstmtend = data[2]
+
+        walktobusDist = data[3][0]
+        walktobusTime = data[3][1]
+        bustoendDist = data[4][0]
+        bustoendTime = data[4][1]
+
+        totalDist = str(round((float(distance) + float(walktobusDist) + float(bustoendDist)), 2))
+        totalTime = str(round((float(time) + float(walktobusTime) + float(bustoendTime)), 2))
+
+        return buslist, noofstops, walkstmtstrt, walkstmtend, totalDist, totalTime
     except IndexError:
         pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
                                truncate_by_edge=True)
         pgmap.save('templates/gui_frontend.html')
-        sitMarker()
+        sitMarker(pgmap)
         return "Routing out address is out of the range of the project scope"
     except ValueError:
         pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
                                truncate_by_edge=True)
         pgmap.save('templates/gui_frontend.html')
-        sitMarker()
+        sitMarker(pgmap)
         return "Locations cannot be the same! Please try a different location for Start and End Point"
 
 
@@ -900,6 +963,7 @@ def walkPlusBusBackEnd(startInput, endInput):
 def lrtBackEnd(startInput, endInput):
     lrtSrc = startInput
     lrtEnd = endInput
+
     try:
         lrt(lrtSrc, lrtEnd)
 
@@ -907,15 +971,16 @@ def lrtBackEnd(startInput, endInput):
         pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
                                truncate_by_edge=True)
         pgmap.save('templates/gui_frontend.html')
-        sitMarker()
+        sitMarker(pgmap)
         return "Routing out address is out of the range of the project scope"
     except ValueError:
         pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
                                truncate_by_edge=True)
         pgmap.save('templates/gui_frontend.html')
-        sitMarker()
+        sitMarker(pgmap)
         return "Locations cannot be the same! Please try a different location for Start and End Point"
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-pgmap.save('templates/gui_frontend.html')
+
+

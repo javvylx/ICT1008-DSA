@@ -5,13 +5,13 @@
 <head>
     <meta charset="UTF-8">
     <title>ICT1008</title>
-    <link rel="shortcut icon" href="{{url_for('static', filename='siticon.png')}}">
     <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     <script src='https://kit.fontawesome.com/a076d05399.js'></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='function.js')}}"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
@@ -37,30 +37,44 @@
                     <input type="text" class="form-control" id="end" name="end_holder" placeholder="What's your end location?">
                 </div>
 
-            </div>
+
                   <b><p>Please select routing type:</p></b>
                   <input type="radio" id="walkRouting" name="buttonType" value="walkRouting" checked>
                   <label for="walkRouting">Walk Routing</label><br>
                   <input type="radio" id="driveRouting" name="buttonType" value="driveRouting">
-                  <label for="driveRouting">Drive Routing</label>
+                  <label for="driveRouting">Drive Routing</label><br>
                   <input type="radio" id="busRouting" name="buttonType" value="busRouting">
                   <label for="busRouting">Bus Routing</label><br>
                   <input type="radio" id="lrtRouting" name="buttonType" value="lrtRouting">
                   <label for="lrtRouting">LRT Routing</label>
               <br>
         <button type="submit" class="btn btn-success" id="searchButton">Search</button>
+                </div>
         </form>
         <div id="result">
             <h4><span class="fa fa-map"></span> Directions</h4>
             <br>
-        <div style = "height : 500px"class="panel panel-default">
+        <div style = "height : auto;" class="panel panel-default">
                 <div class="panel-body">
-                    <div style="color:red; font-weight: bold;">{{data}}</div>
                     <b>Start Location:</b> <br>{{startInput}}
                     <br> <b>End Location:</b><br> {{endInput}}
                     <br> <b>Distance (km):</b><br>{{dist}}
-                    <br> <b>Time to reach (mins):</b> <br>{{time}}
+                    <br> <b>Time to reach (mins):</b> <br>{{time}}<br><br>
+                    <br> <b>Start Time:</b><br>{{current_time}}
+                    <br> <b>Estimated Arrival Time:</b><br>{{endtime}}
+
+
+                    <br>{{ walkStart }}<br>
+                    {% for i in Transportlist %}
+                    <br>{{ i }}<br>
+                    {% endfor %}
+
+                    <br>{{ walkEnd }}<br>
+                    <br>{{ stops }}<br>
+
+                    <br>
                     <br><br>
+                    <div style="color:red; font-weight: bold;">{{data}}</div>
                 </div>
             </div>
         </div>
