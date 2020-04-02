@@ -60,12 +60,12 @@
                     <b>Start Location:</b> <br>{{startInput}}
                     <br> <b>End Location:</b><br> {{endInput}}
                     <br> <b>Distance (km):</b><br>{{dist}}
-                    <br> <b>Time to reach (mins):</b> <br>{{time}}<br><br>
-                    <br> <b>Start Time:</b><br>{{current_time}}
-                    <br> <b>Estimated Arrival Time:</b><br>{{endtime}}
+                    <br> <b>Time to reach (mins):</b> <br>{{time}}<br>
+                    <br> <b>Start Time (12-hour):</b><br>{{current_time}}
+                    <br> <b>Estimated Arrival Time (12-hour):</b><br>{{endtime}}
 
 
-                    <br>{{ walkStart }}<br>
+                    {{ walkStart }}<br>
                     {% for i in Transportlist %}
                     <br>{{ i }}<br>
                     {% endfor %}

@@ -2,20 +2,11 @@ from flask import Flask, render_template
 from flask import request
 import backend as be
 import datetime
-import os
 
 app = Flask(__name__)
 
-
-# @app.route("/")
-# def index():
-#     return render_template('default_guifrontend.html')
-
 currentDT = datetime.datetime.now()
 current_time = int(currentDT.strftime("%H%M"))
-print(current_time)
-# current_time = 1200
-
 
 @app.route("/", methods=["GET", "POST"])
 def plot():
@@ -24,9 +15,7 @@ def plot():
         startInput = capture_frontend_req['start_holder']
         endInput = capture_frontend_req['end_holder']
         typeButton = capture_frontend_req['buttonType']
-        print(typeButton)
         if typeButton == "walkRouting":
-            # os.remove("templates/gui_frontend.html")
             data = be.walkingBackEnd(startInput, endInput)
             if type(data) == list:
                 dist = data[0]
@@ -38,7 +27,6 @@ def plot():
             elif type(data) == str:
                 return render_template('user.html', startInput=startInput, endInput=endInput, data=data)
         elif typeButton == "driveRouting":
-            # os.remove("templates/gui_frontend.html")
             data = be.drivingBackEnd(startInput, endInput)
             print(data)
             if type(data) == list:
@@ -92,17 +80,16 @@ def plot():
             elif type(data) == str:
                 return render_template('user.html', startInput=startInput, endInput=endInput, data=data)
         elif typeButton == "lrtRouting":
-            pass
+            data = be.lrtBackEnd(startInput, endInput)
+            if type(data) == list:
+                dist = data[0]
+                time = data[1]
+                endtime = str(round(current_time + float(time)))
 
-        # if typeButton == "walkRouting":
-        #     data = be.walkingBackEnd(startInput, endInput)
-        #     return render_template('user.html', startInput=startInput, endInput=endInput, data=data)
-        # elif typeButton == "busRouting":
-        #     data2 = be.drivingBackEnd(startInput, endInput)
-        #     return render_template('user.html', startInput=startInput, endInput=endInput, data2=data2)
-        # elif typeButton == "lrtRouting":
-        #     data3 = be.lrtBackEnd(startInput, endInput)
-        #     return render_template('user.html', startInput=startInput, endInput=endInput, data3=data3)
+                return render_template('user.html', startInput=startInput, endInput=endInput, dist=dist, time=time,
+                                       current_time=current_time, endtime=endtime)
+            elif type(data) == str:
+                return render_template('user.html', startInput=startInput, endInput=endInput, data=data)
 
     return render_template('user.html')
 
