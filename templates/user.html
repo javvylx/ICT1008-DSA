@@ -4,7 +4,8 @@
 <link rel="shortcut icon" href="{{ url_for('static', filename='images/siticon.png') }}">
 <head>
     <meta charset="UTF-8">
-    <title>ICT1008</title>
+    <title>ICT1008 - PANG KANG MAP</title>
+    <link rel="shortcut icon" href="{{url_for('static', filename='siticon.png')}}">
     <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     <script src='https://kit.fontawesome.com/a076d05399.js'></script>
@@ -25,15 +26,15 @@
 
 <div class="sidebar">
     <div class="container-fluid">
-        <h4><span class="fa fa-search"></span> Search</h4>
+        <h4 id="groupName"><img src="{{url_for('static', filename='Group_logo.png')}}" alt="Group_logo" height="42" width="42"> PANG KANG MAP</h4>
         <form action="" method="POST">
             <div class="form-group" id="formGroup">
                 <div id="startL">
-                    <label for="start">Start Location:</label>
+                    <label for="start"><span class="fa fa-search"></span> Start Location:</label>
                     <input type="text" class="form-control" id="start" name="start_holder" placeholder="What's your start location?">
                 </div>
                 <div id="endL">
-                    <label for="end">End Location:</label>
+                    <label for="end"><span class="fa fa-search"></span> End Location:</label>
                     <input type="text" class="form-control" id="end" name="end_holder" placeholder="What's your end location?">
                 </div>
 
