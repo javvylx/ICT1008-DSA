@@ -26,7 +26,7 @@ def plot():
         typeButton = capture_frontend_req['buttonType']
         print(typeButton)
         if typeButton == "walkRouting":
-            os.remove("templates/gui_frontend.html")
+            # os.remove("templates/gui_frontend.html")
             data = be.walkingBackEnd(startInput, endInput)
             if type(data) == list:
                 dist = data[0]
@@ -38,7 +38,7 @@ def plot():
             elif type(data) == str:
                 return render_template('user.html', startInput=startInput, endInput=endInput, data=data)
         elif typeButton == "driveRouting":
-            os.remove("templates/gui_frontend.html")
+            # os.remove("templates/gui_frontend.html")
             data = be.drivingBackEnd(startInput, endInput)
             print(data)
             if type(data) == list:
@@ -93,7 +93,6 @@ def plot():
                 return render_template('user.html', startInput=startInput, endInput=endInput, data=data)
         elif typeButton == "lrtRouting":
             pass
-
 
         # if typeButton == "walkRouting":
         #     data = be.walkingBackEnd(startInput, endInput)

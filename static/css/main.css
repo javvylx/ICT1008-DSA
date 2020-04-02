@@ -2,7 +2,7 @@
 .sidebar {
   margin: 0;
   padding: 0;
-  width: 350px;
+  width: 310px;
   background-color: #C0C0C0;
   position: fixed;
   height: 100%;
@@ -10,7 +10,7 @@
 }
 /* Page content. The value of the margin-left property should match the value of the sidebar's width property */
 div.content {
-  margin-left: 350px;
+  margin-left: 310px;
   height: 1000px;
 }
 
@@ -42,7 +42,7 @@ padding: 5px;
 padding: 5px;
 }
 #searchButton {
-margin-left: 220px;
+margin-left: 200px;
 margin-top: 5px;
 margin-bottom: 5px;
 }
