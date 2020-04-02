@@ -64,15 +64,13 @@ https://imgur.com/a/IRoFsJq
 * [Osmnx](https://python-visualization.github.io/folium/) - Visualization for street networks 
 * [OpenStreetMap](https://www.openstreetmap.org/) - Open Source API for mapping data 
 
-
 ## Authors
-
-- Javier Lim
-- Tan Yi Hao 
-- Heng Pei Min
-- Farin Tahrima Rahman
-- Goh Jia En
-- Teo Zhong Peng
+- Javier Lim [@javvylx](https://github.com/javvylx)
+- Tan Yi Hao [@zactyh](https://github.com/zactyh)
+- Heng Pei Min [@hengpeimin](https://github.com/hengpeimin)
+- Farin Tahrima Rahman [@FarinTahrima](https://github.com/FarinTahrima)
+- Goh Jia En [@jiaengoh](https://github.com/jiaengoh)
+- Teo Zhong Peng [@zacktzp](https://github.com/zacktzp)
 
 ## References 
 OSMNX:
@@ -104,4 +102,7 @@ Algorithm Used:
   * https://www.geeksforgeeks.org/breadth-first-search-or-bfs-for-a-graph/
   * https://www.geeksforgeeks.org/dijkstras-shortest-path-algorithm-greedy-algo-7/
   * https://www.geeksforgeeks.org/a-search-algorithm/
-  
+
+## Credits:
+- [Geoff Gboeing](https://github.com/gboeing) - OSMnx: Python for street networks.
+- [LTA Data Mall](https://www.mytransport.sg/content/mytransport/home/dataMall.html) - Bus Route Information
