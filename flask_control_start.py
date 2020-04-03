@@ -7,6 +7,8 @@ app = Flask(__name__)
 
 currentDT = datetime.datetime.now()
 current_time = int(currentDT.strftime("%H%M"))
+print(current_time)
+
 
 @app.route("/", methods=["GET", "POST"])
 def plot():
@@ -21,6 +23,7 @@ def plot():
                 dist = data[0]
                 time = data[1]
                 endtime = str(round(current_time + float(time)))
+
 
                 return render_template('user.html', startInput=startInput, endInput=endInput, dist=dist, time=time,
                                        current_time=current_time, endtime=endtime)
@@ -39,7 +42,6 @@ def plot():
                 return render_template('user.html', startInput=startInput, endInput=endInput, data=data)
         elif typeButton == "busRouting":
             data = be.walkPlusBusBackEnd(startInput, endInput)
-            # print(data)
             if type(data) == tuple:
                 buslist = data[0]
                 noofstops = data[1]
@@ -85,9 +87,25 @@ def plot():
                 dist = data[0]
                 time = data[1]
                 endtime = str(round(current_time + float(time)))
+                if len(data)==4:
+                    startlrt="\nWalk from "+ startInput + " to " +data[2]+" LRT station"
+                    lrttrav="Take the LRT from "+data[2]+" station to "+data[3]+" station"
+                    endlrt="Walk from "+ data[3]+" LRT station "+" to " + endInput
+                    directions = [startlrt, lrttrav, endlrt]
+                    return render_template('user.html', startInput=startInput, endInput=endInput,
+                                           TransportList=directions, stops=endlrt, walkEnd=lrttrav, walkStart=startlrt,
+                                           dist=dist, time=time,
+                                           current_time=current_time, endtime=endtime)
+                elif len(data)==5:
+                    startlrt = "\nWalk from " + startInput + " to " + data[2] + " LRT station"
+                    lrttrav="Take the LRT from "+data[2]+" station to "+data[3]+" station. \nThen take another LRT from " + data[3] + " station to "+data[4]+" station."
+                    endlrt = "Walk from " + data[4] + " LRT station " + " to " + endInput
+                    directions=[startlrt,lrttrav,endlrt]
+                    return render_template('user.html', startInput=startInput, endInput=endInput,
+                                           TransportList=directions, stops=endlrt, walkEnd=lrttrav, walkStart=startlrt,
+                                           dist=dist, time=time,
+                                           current_time=current_time, endtime=endtime)
 
-                return render_template('user.html', startInput=startInput, endInput=endInput, dist=dist, time=time,
-                                       current_time=current_time, endtime=endtime)
             elif type(data) == str:
                 return render_template('user.html', startInput=startInput, endInput=endInput, data=data)
 
