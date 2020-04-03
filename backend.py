@@ -1157,7 +1157,7 @@ def walkPlusBusBackEnd(startInput, endInput):
         return "Locations cannot be the same! Please try a different location for Start and End Point"
 
 
-# --------------------------------------------------- LRT ROUTING ------------------------------------------------------
+# --------------------------------------------------- LRT WALK + ROUTING -----------------------------------------------
 
 def lrtBackEnd(startInput, endInput):
     walkingSrc = startInput
