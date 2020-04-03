@@ -16,7 +16,7 @@ https://github.com/javvylx/1008-DSA/archive/master.zip
 * [Pycharm Community](https://www.jetbrains.com/pycharm/download/download-thanks.html?platform=windows&code=PCC) - Python IDE for professional developer
 
 
-### Installing
+### Installation of dependencies 
 Make sure the above prerequisities are installed before continuing 
 
 **Step 1:** Creation of anaconda python environment
