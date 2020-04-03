@@ -1,27 +1,35 @@
 from math import sin, cos, sqrt, atan2, radians, acos
 import math
-import json
 import heapq as hq
-import networkx as nx
 import osmnx as ox
 import folium as fol
 import geopandas as gpd
 import json
 import datetime
 from functools import partial
-import os
 
+# Adding of punggol map polygon created from geojson.io
 punggol = gpd.read_file('geojson_files/map.geojson')
+
+# Init the polygon data from geometry section of the first row of the data frame
 polygon = punggol['geometry'].iloc[0]
+# Retrieved LRT information from OSMNX
 lrtGraph = ox.core.graph_from_polygon(polygon, truncate_by_edge=True, infrastructure='way["railway"]')
+# Retrieved walking information from OSMNX
 walkGraph = ox.core.graph_from_polygon(polygon, truncate_by_edge=True, network_type="walk")
+# Retrieved Building information from OSMNX
 BuildingsNodesFootPrint = ox.footprints.footprints_from_polygon(polygon, footprint_type='building',
                                                                 retain_invalid=False)
+# Retrieved Driving information from OSMNX
 driveGraph = ox.core.graph_from_polygon(polygon, truncate_by_edge=True, network_type="drive")
+
+# Plot Building Nodes using OSMNX projection
 plotBuildingNodes = ox.project_gdf(BuildingsNodesFootPrint)
 
+# Retrieved the walking nodes locations, 1.5km around punggol area
 walkgraph = ox.graph_from_point((1.402777, 103.906493), distance=1500, network_type='walk', truncate_by_edge=True,
                                 simplify=False)
+# Retrieved drive_service roads nodes and edges, 1.5km around punggol area
 drivegraph = ox.graph_from_point((1.402777, 103.906493), distance=1500, network_type='drive_service',
                                  truncate_by_edge=True,
                                  simplify=False)
@@ -33,6 +41,7 @@ driveNode, driveEdge = ox.graph_to_gdfs(driveGraph)
 lrtNode, lrtEdge = ox.graph_to_gdfs(lrtGraph)
 
 
+# Display SIT marker on map
 def sitMarker(pgmap):
     logoIcon = fol.features.CustomIcon('images/siticon.png', icon_size=(40, 40))
     SITtooltip = fol.Marker(location=[1.413006, 103.913249], popup='<strong>SIT New Punggol Campus</strong>',
@@ -40,15 +49,18 @@ def sitMarker(pgmap):
     SITtooltip.add_to(pgmap)
 
 
+# Init Base Map
 basePgMap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15,
                            truncate_by_edge=True)
 sitMarker(basePgMap)
 
+# Setting of style for all the nodes, edges, etc
 style_function = lambda feature: dict(
     color="#FFD97B",
     weight=1,
     opacity=0.8)
 
+# Creation of map overlays
 driveGraphL = fol.GeoJson(driveEdge, name="Public Roads", style_function=style_function)
 driveGraphL.add_to(basePgMap)
 
@@ -65,10 +77,10 @@ basePgMap.save('templates/gui_frontend.html')
 
 
 def importFiles(edgepath, nodepath):
-    with open(nodepath) as f:  # data/walknodes.geojson
+    with open(nodepath) as f:  # geojson_files/walknodes.geojson | geojson_files/drivenodes.geojson
         nodes = json.load(f)
 
-    with open(edgepath) as f:  # data/walkedges.geojson
+    with open(edgepath) as f:  # geojson_files/walkedges.geojson | geojson_files/driveedges.geojson
         edges = json.load(f)
 
     # return as dicts/list
@@ -78,7 +90,7 @@ def importFiles(edgepath, nodepath):
 walknodes, walkedges = importFiles('geojson_files/walkedges.geojson', 'geojson_files/walknodes.geojson')
 drivenodes, driveedges = importFiles('geojson_files/driveedges.geojson', 'geojson_files/drivenodes.geojson')
 
-
+# Convert long n lat to to coordinates
 def convertToCoord(path, nodes):
     route = []
     for id in path:
@@ -86,17 +98,17 @@ def convertToCoord(path, nodes):
     return route
     # return a list of coordinates to plot
 
-
+# convert OSMID to Long and Lat
 def convertOSMIDtoLL(userInput):
     for k in walk:
         if k.get("osmid") == userInput:
             return str(k.get("x")), str(k.get("y"))
 
-
+# A Star Heuristic
 def heuristic(x1, y1, x2, y2):
     return math.pow((x1 - x2), 2) + math.pow((y1 - y2), 2)
 
-
+# Dijkstra Heuristic
 def dijkstra(start, end, edgesdict, nodesdict):
     heap = [(0, start, [])]  # cost, current node, path
     hq.heapify(heap)  # creates a heap
@@ -421,7 +433,7 @@ def lrtroute(start, end):  # before routing the lrt, find out which station it b
                 path2[len(path2) - 1 - i] = temp
         for i in range(len(path2)):  # add the arranged path to the combined path later used in mapping
             combopath.append(path2[i])
-        print(combopath)
+        # print(combopath)
         return combopath
 
 
@@ -474,40 +486,11 @@ def getNearestEdgeNode(osm_id, a):  # gets nearest edge from the node from the o
         return nearest_edge[2]
 
 
-# lrtstation={"pw1":[1.4098, 103.9049],"pw2":[1.4165, 103.9068]}
-#
-# start = (1.4098, 103.9049)  # Sample start coordinates
-# end = (1.4045, 103.8970)  # Sample end coordinates
-# # start = (103.9073345, 1.4060506) # Sample start coordinates
-# # end = (103.9172982, 1.3956014) # Sample end coordinates
-# start_node = str(ox.get_nearest_node(lrtGraph, start, method='haversine'))
-# print(start_node)
-#
-# end_node = str(ox.get_nearest_node(lrtGraph, end, method='haversine'))
-# print(end_node)
-# start_node = '2274884613'
-# end_node=  '3057389878'
-# test = calculateShortest(start_node, end_node)
-# print(test)
-
-# origin_node = list(walkGraph.nodes)[2]
-# destination_node = list(walkGraph.nodes)[-1]
-# route = nx.shortest_path(pgmap, origin_node, destination_node)
-
-
-# print("Current time:")
-# print(currentDT.strftime("%H%M"))
 # Get system time to coordinate which buses are available at the time
 # ---------------------------------------------------------------------------------
 currentDT = datetime.datetime.now()
 current_time = int(currentDT.strftime("%H%M"))  # stores current time to reference with the bus timings
-# current_time = 1200
 # -------------------------------------------------------------------------------
-# startBus = "Bef Punggol Dr"
-# endBus = "Coral Edge Stn Exit B"
-# print("Start Point:\n", startBus)
-# print("End Point:\n", endBus)
-
 # Load data from json
 myStop = json.loads(open("geojson_files/myStop.json").read())
 myServices = json.loads(open("geojson_files/myServices.json").read())
@@ -573,7 +556,14 @@ def breadthFirst(graph, startPoint, endPoint):
             queue.put(new_path)
 
 
-# runs the bus routing alg
+# Main Bus routing Function
+# Walking portion uses the A star + dijkstra algorithm. Bus uses breadth first search as the routing for the bus is
+# already set from the LTA database, therefore allows us to do a search to find all possible routes, singling out the
+# single route that can be used for the routing. From the coordinate chosen, the program finds the nearest bus stop
+# coordinate by calculating the shortest distance between each possibility, then using the walking routes, plots a path
+# to the bus stop. The program then runs the bus routing to the bus stop closest to the end coordinate and the walk
+# routing runs again to plot to the end coordinate.
+
 def busRouting(startPoint, endPoint, pgmap):
     # get service returns the description from the path into a tuple
     def getService(i):
@@ -586,7 +576,7 @@ def busRouting(startPoint, endPoint, pgmap):
 
     # running breadth first to get the path
     path = breadthFirst(graph, stopDescription[startPoint]["BusStopCode"], stopDescription[endPoint]["BusStopCode"])
-    print("")
+    # print("")
     start_bus = None
     end_bus = None
     last_node = None
@@ -594,17 +584,17 @@ def busRouting(startPoint, endPoint, pgmap):
     dist = 0
     # running get service in order to retrieve the description such as bus number, description and coordinates
     for i in range(len(path) - 1):
-        print(getService(i))
-
-        print(getService(i)[2])
-        print(getService(i)[3])
+        # print(getService(i))
+        #
+        # print(getService(i)[2])
+        # print(getService(i)[3])
         # mark bus stops on map
         # start point
         fol.Marker(location=[getService(i)[2], getService(i)[3]], tooltip=getService(i)[1],
                    popup="Bus No. " + getService(i)[0],
                    icon=fol.Icon(color='green', icon='bus', prefix='fa')).add_to(pgmap)
-        print(getService(i)[5])
-        print(getService(i)[6])
+        # print(getService(i)[5])
+        # print(getService(i)[6])
         # end point
         fol.Marker(location=[getService(i)[5], getService(i)[6]], tooltip=getService(i)[4],
                    popup="Bus No. " + getService(i)[0],
@@ -614,7 +604,7 @@ def busRouting(startPoint, endPoint, pgmap):
         busEnd = (getService(i)[5], getService(i)[6])
         start_bus = str(ox.get_nearest_node(drivegraph, busStart))
         end_bus = str(ox.get_nearest_node(drivegraph, busEnd))
-        print(start_bus, end_bus)
+        # print(start_bus, end_bus)
         if start_bus == end_bus:
             fol.PolyLine(([float("{0:.7f}".format(getService(i)[2])), float("{0:.7f}".format(getService(i)[3]))],
                           [float("{0:.7f}".format(getService(i)[5])), float("{0:.7f}".format(getService(i)[6]))]),
@@ -627,7 +617,7 @@ def busRouting(startPoint, endPoint, pgmap):
             end_bus_x = drivenodes.get(end_bus)[0].get('lat')
             end_bus_y = drivenodes.get(end_bus)[0].get('lon')
             bus = calculateShortest(start_bus, end_bus, "driving")
-            print(bus)
+            # print(bus)
             # plots the routes from bus stop to bus stops using the dijkstra alg
             # calculates distance from each path
             for m in range(len(bus) - 1):
@@ -668,39 +658,12 @@ def busRouting(startPoint, endPoint, pgmap):
     time = dist / 35 * 60
     cleanDist = str(round(dist, 2))
     cleanTime = str(round(time, 2))
-    print(cleanDist)
-    print(cleanTime)
+    # print(cleanDist)
+    # print(cleanTime)
     busArray = [cleanDist, cleanTime]  # places distance and time in an array to be returned
-    print(busSummary)
-    print(len(path), "stops")
+    # print(busSummary)
+    # print(len(path), "stops")
     return busSummary, len(path), busArray
-
-
-# busRouting(startBus, endBus)
-
-# print("=================================================================")
-# print(bus)
-
-# -------------------------------------------------------------------------------------------------
-# fol.PolyLine(([float("{0:.7f}".format(getService(i)[2])), float("{0:.7f}".format(getService(i)[3]))],
-#               [float("{0:.7f}".format(getService(i)[5])), float("{0:.7f}".format(getService(i)[6]))]),
-#              color='green', weight=2.5, opacity=1).add_to(pgmap)
-# -------------------------------------------------------------------------------------------------
-
-# if i == 0:
-#     start_bus = str(ox.get_nearest_node(drivegraph, busStart, method='haversine'))
-#     print("this is start")
-#     print(start_bus)
-# if i == int((len(path)-2)/4):
-#     end_bus = str(ox.get_nearest_node(drivegraph, busEnd, method='haversine'))
-#     print("this is end")
-#     print(end_bus)
-#
-# if start_bus and end_bus is not None:
-#     print("-----------------------------------------")
-#     print(start_bus, end_bus)
-#     bus = calculateShortest(start_bus, end_bus, "driving")
-#     fol.PolyLine(bus, color='green', weight=2.5, opacity=1).add_to(pgmap)
 
 
 def find_nearest(points, coor):
@@ -734,12 +697,12 @@ def walkPlusBus(src1, des1):
     sitMarker(pgmap)
     startbus1coord = (float(ox.geocode(src1)[0]), float(ox.geocode(src1)[1]))
     endbus1coord = (float(ox.geocode(des1)[0]), float(ox.geocode(des1)[1]))
-    print(startbus1coord)
-    print(endbus1coord)
+    # print(startbus1coord)
+    # print(endbus1coord)
     startbus1 = find_nearest(graph_dict, startbus1coord)
-    print(startbus1)
+    # print(startbus1)
     endbus1 = find_nearest(graph_dict, endbus1coord)
-    print(endbus1)
+    # print(endbus1)
 
     start_bus_coord = graph_dict.get(startbus1)
     end_bus_coord = graph_dict.get(endbus1)
@@ -793,6 +756,10 @@ def walkPlusBus(src1, des1):
     pgmap.save('templates/gui_frontend.html')
     return data, walktobusStatement, bustoendStatement, walktobusDist, bustoendDist
 
+# Main function for walking algorithm
+# Uses the A star + dijkstra algorithm, utilising 2 dictionaries consisting of edges and nodes for either driving or
+# walking, checking the whether the nodes are visited or not, using heuristic, adding the distance to create the priority
+# of the node, pushing to the heap and popping to append to the path with the corresponding edges.
 
 def walking(src, des):
     pgmap = fol.folium.Map(location=[1.403948, 103.909048], tiles='openstreetmap', zoom_start=15, truncate_by_edge=True)
@@ -807,20 +774,20 @@ def walking(src, des):
                            tooltip="End", icon=fol.Icon(color='red', icon='male', prefix='fa'))
     endmarker.add_to(pgmap)
     start_node = str(ox.get_nearest_node(walkGraph, startpoint, method='haversine'))
-    print(start_node)
+    # print(start_node)
     end_node = str(ox.get_nearest_node(walkGraph, endpoint, method='haversine'))
-    print(end_node)
-    print("-----------------------------------------")
+    # print(end_node)
+    # print("-----------------------------------------")
     tt = calculateShortest(start_node, end_node, "walking")
-    print(tt)
+    # print(tt)
     dist = 0
     for m in range(len(tt) - 1):
         dist = dist + calculateDist(float(tt[m][0]), float(tt[m][1]), float(tt[m + 1][0]), float(tt[m + 1][1]))
     time = dist / 5 * 60
     cleanDist = str(round(dist, 2))
     cleanTime = str(round(time, 2))
-    print(cleanDist)
-    print(cleanTime)
+    # print(cleanDist)
+    # print(cleanTime)
     walkArray = [cleanDist, cleanTime]
     # WALK ROUTE
     fol.PolyLine(tt, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
@@ -829,7 +796,17 @@ def walking(src, des):
 
     return walkArray
 
-
+# For the LRT section, a walk path is implemented using dijkstra to find the nearest lrt stations from its start and end location.
+# Then for the LRT stops found, a linear search is done for both the stations to determine whether they belong to the same line.
+# LRT stations on a line usually have 2 neighbours(the next stops).
+# If they belong to the same LRT line, for better accuracy two possible routes are calculated from its two different
+# neighbours based on its travel time and from there Prim's algorithm is carried out to prevent creating a loop.
+# However if the stations belong to a different line, the process for used for the same lrt scenario is implemented twice,
+# one for start and one for end just that Punggol will be the end and start point of the respective process, as Punggol
+# is the station linking the two lines, hence Punggol is the only station with 4 neighbours.But if the focus is just on
+# the same LRT line only, Punggol has two neighbbours too, since there isn't a need for the
+# other two neighbours in this process.
+# After the walk paths and lrt path are figured out, they are joined together to display the final routing on the map.
 def walkforlrt(src, des):
     alrt = []
     stops = []
@@ -843,15 +820,15 @@ def walkforlrt(src, des):
                              tooltip="Start", icon=fol.Icon(color='blue', icon='male', prefix='fa'))
     startmarker.add_to(pgmap)
     start_node = str(ox.get_nearest_node(walkGraph, startpoint, method='haversine'))
-    print(start_node)
+    # print(start_node)
     # assume nearest lrt station is the first lrt station(punggol)
     endpoint1 = eastlrtnodes[0]
     end_node1 = str(ox.get_nearest_node(walkGraph, endpoint1, method='haversine'))
-    print(end_node1)
-    print("-----------------------------------------")
+    # print(end_node1)
+    # print("-----------------------------------------")
     # find the distance from the start to lrt station(first lrt station in this case)
     tt = calculateShortest(start_node, end_node1, "walking")
-    print(tt)
+    # print(tt)
     dist1 = 0
     lrtin1 = 0
     lrtin2 = 0
@@ -861,8 +838,8 @@ def walkforlrt(src, des):
     time1 = dist1 / 5 * 60
     cleanDist1 = str(round(dist1, 2))
     cleanTime1 = str(round(time1, 2))
-    print(cleanDist1)
-    print(cleanTime1)
+    # print(cleanDist1)
+    # print(cleanTime1)
     # to create a list with all the lrt stations from east and west
     for a in range(1, len(eastlrtnodes)):
         alrt.append(eastlrtnodes[a])
@@ -875,10 +852,10 @@ def walkforlrt(src, des):
             # to check distance and time for all the lrt station from the start point and choose the nearest one
             endpoint2 = alrt[i]
             end_node2 = str(ox.get_nearest_node(walkGraph, endpoint2, method='haversine'))
-            print(end_node2)
-            print("-----------------------------------------")
+            # print(end_node2)
+            # print("-----------------------------------------")
             tt = calculateShortest(start_node, end_node2, "walking")
-            print(tt)
+            # print(tt)
             dist2 = 0
             for m in range(len(tt) - 1):
                 dist2 = dist2 + calculateDist(float(tt[m][0]), float(tt[m][1]), float(tt[m + 1][0]),
@@ -886,8 +863,8 @@ def walkforlrt(src, des):
             time2 = dist2 / 5 * 60
             cleanDist2 = str(round(dist2, 2))
             cleanTime2 = str(round(time2, 2))
-            print(cleanDist2)
-            print(cleanTime2)
+            # print(cleanDist2)
+            # print(cleanTime2)
             if (
                     cleanDist1 <= cleanDist2):  # if an lrt station with lesser distance found then that becomes the least one
                 endpoint = endpoint1
@@ -902,11 +879,11 @@ def walkforlrt(src, des):
     # m = folium.map(location=punggol, distance=distance)
     way1 = stops[lrtin1]  # to setup the name of the nearest stn from start
     end_node = str(ox.get_nearest_node(walkGraph, endpoint, method='haversine'))
-    print(end_node)
-    print("-----------------------------------------")
+    # print(end_node)
+    # print("-----------------------------------------")
     # do a final routing of start to its nearest lrt
     tt = calculateShortest(start_node, end_node, "walking")
-    print(tt)
+    # print(tt)
     # distance and time from start to nearest lrt finalised
     dista = 0
     for m in range(len(tt) - 1):
@@ -914,8 +891,8 @@ def walkforlrt(src, des):
     timea = dista / 5 * 60
     cleanDist = str(round(dista, 2))
     cleanTime = str(round(timea, 2))
-    print(cleanDist)
-    print(cleanTime)
+    # print(cleanDist)
+    # print(cleanTime)
     walkArray = [cleanDist, cleanTime]
     # WALK ROUTE for start to nearest lrt add to map
     fol.PolyLine(tt, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
@@ -937,22 +914,22 @@ def walkforlrt(src, des):
         distc = distc + calculateDist(float(tt[m][0]), float(tt[m][1]), float(tt[m + 1][0]), float(tt[m + 1][1]))
 
     start_node = str(ox.get_nearest_node(walkGraph, startpoint, method='haversine'))
-    print(start_node)
+    # print(start_node)
 
     endpoint1 = eastlrtnodes[0]
     end_node1 = str(ox.get_nearest_node(walkGraph, endpoint1, method='haversine'))
-    print(end_node1)
-    print("-----------------------------------------")
+    # print(end_node1)
+    # print("-----------------------------------------")
     tt = calculateShortest(start_node, end_node1, "walking")
-    print(tt)
+    # print(tt)
     dist1 = 0
     for m in range(len(tt) - 1):
         dist1 = dist1 + calculateDist(float(tt[m][0]), float(tt[m][1]), float(tt[m + 1][0]), float(tt[m + 1][1]))
     time1 = dist1 / 5 * 60
     cleanDist1 = str(round(dist1, 2))
     cleanTime1 = str(round(time1, 2))
-    print(cleanDist1)
-    print(cleanTime1)
+    # print(cleanDist1)
+    # print(cleanTime1)
     for a in range(len(eastlrtnodes)):
         alrt.append(eastlrtnodes[a])
     for a in range(len(westlrtnodes)):
@@ -961,10 +938,10 @@ def walkforlrt(src, des):
         try:
             endpoint2 = alrt[i]
             end_node2 = str(ox.get_nearest_node(walkGraph, endpoint2, method='haversine'))
-            print(end_node2)
-            print("-----------------------------------------")
+            # print(end_node2)
+            # print("-----------------------------------------")
             tt = calculateShortest(start_node, end_node2, "walking")
-            print(tt)
+            # print(tt)
             dist2 = 0
             for m in range(len(tt) - 1):
                 dist2 = dist2 + calculateDist(float(tt[m][0]), float(tt[m][1]), float(tt[m + 1][0]),
@@ -972,9 +949,9 @@ def walkforlrt(src, des):
             time2 = dist2 / 5 * 60
             cleanDist2 = str(round(dist2, 2))
             cleanTime2 = str(round(time2, 2))
-            print(cleanDist2)
-            print(cleanTime2)
-            if (cleanDist1 <= cleanDist2):
+            # print(cleanDist2)
+            # print(cleanTime2)
+            if cleanDist1 <= cleanDist2:
                 endpoint = endpoint1
             else:
                 cleanDist1 = cleanDist2
@@ -998,19 +975,19 @@ def walkforlrt(src, des):
         countway = 2
 
     end_node = str(ox.get_nearest_node(walkGraph, endpoint, method='haversine'))
-    print(end_node)
-    print("-----------------------------------------")
+    # print(end_node)
+    # print("-----------------------------------------")
     # now finalize the timing for the dest and its nearest stop
     tt = calculateShortest(start_node, end_node, "walking")
-    print(tt)
+    # print(tt)
     distb = 0
     for m in range(len(tt) - 1):
         distb = distb + calculateDist(float(tt[m][0]), float(tt[m][1]), float(tt[m + 1][0]), float(tt[m + 1][1]))
     timeb = distb / 5 * 60
     cleanDist = str(round(distb, 2))
     cleanTime = str(round(timeb, 2))
-    print(cleanDist)
-    print(cleanTime)
+    # print(cleanDist)
+    # print(cleanTime)
 
     # WALK ROUTE from nearest dest stop to dest
     fol.PolyLine(tt, color="#3388ff", weight=2.5, opacity=1).add_to(pgmap)
@@ -1064,9 +1041,9 @@ def driving(src1, des1):
     endmarker1.add_to(pgmap)
     start_node1 = str(ox.get_nearest_node(driveGraph, startpoint1, method='haversine'))
     end_node1 = str(ox.get_nearest_node(driveGraph, endpoint1, method='haversine'))
-    print("-----------------------------------------")
+    # print("-----------------------------------------")
     ll = calculateShortest(start_node1, end_node1, "driving")
-    print(ll)
+    # print(ll)
     distDrive = 0
     for m in range(len(ll) - 1):
         distDrive = distDrive + calculateDist(float(ll[m][0]), float(ll[m][1]), float(ll[m + 1][0]),
@@ -1074,8 +1051,8 @@ def driving(src1, des1):
     timeDrive = distDrive / 50 * 60
     cleanDist = str(round(distDrive, 2))
     cleanTime = str(round(timeDrive, 2))
-    print(cleanDist)
-    print(cleanTime)
+    # print(cleanDist)
+    # print(cleanTime)
     driveArray = [cleanDist, cleanTime]
     # DRIVE ROUTE
     fol.PolyLine(ll, color='red', weight=2.5, opacity=1).add_to(pgmap)
@@ -1099,43 +1076,6 @@ def lrt(st, en):
 
     fol.PolyLine(tt, color="black", weight=2.5, opacity=1).add_to(pgmap)
 
-
-# Geocoding starts here
-
-# src = "406B, Northshore Drive, Punggol"
-# des = "Blk 126D, Punggol Field, Punggol"  # random hdb 60 Punggol East, Singapore 828825
-# startpoint = ox.geocode(src)
-# print(startpoint)
-# endpoint = ox.geocode(des)
-# print(endpoint)
-#
-# start_node = ox.get_nearest_node(walkGraph, startpoint, method='haversine', return_dist=False)
-#
-# end_node = ox.get_nearest_node(walkGraph, endpoint, method='haversine', return_dist=False)
-# print(end_node)
-#
-# test = convertOSMIDtoLL(start_node)
-# print(test)
-# test2 = convertOSMIDtoLL(end_node)
-# print(test2)
-#
-# startmarker = fol.Marker(location=startpoint, popup='<strong>Start Point 10</strong>')
-# startmarker.add_to(pgmap)
-#
-# endmarker = fol.Marker(location=endpoint, popup='<strong>End Point 10</strong>')
-# endmarker.add_to(pgmap)
-
-# ----------------------------------------------------------------------------------------------------------------------
-# start = (1.413006, 103.9073345)
-# end = (1.3956014, 103.9172982)
-# walking(start, end)
-
-# walkingSrc = "406B, Northshore Drive, Punggol"
-# walkingDes = "Blk 126D, Punggol Field, Punggol"
-#
-# # walkingSrc = start()
-# # walkingDes = stop()
-# walkPlusBus(walkingSrc, walkingDes)
 
 # ----------------------------------------------------- WALK ROUTING ---------------------------------------------------
 def walkingBackEnd(startInput, endInput):
@@ -1174,7 +1114,6 @@ def drivingBackEnd(startInput, endInput):
         sitMarker(pgmap)
         return "Locations cannot be the same! Please try a different location for Start and End Point"
 
-
 # -------------------------------------------- WALKING PLUS BUS ROUTING ------------------------------------------------
 def walkPlusBusBackEnd(startInput, endInput):
     walkPlusBusSrc = startInput
@@ -1187,9 +1126,6 @@ def walkPlusBusBackEnd(startInput, endInput):
         return "Locations cannot be the same! Please try a different location for Start and End Point"
     try:
         data = walkPlusBus(walkPlusBusSrc, walkPlusBusEnd)
-        # pgmap.save('templates/gui_frontend.html')
-        print("------------------------------******************")
-        print(data)
         buslist = data[0][0]
         noofstops = data[0][1]
         dis = data[0][2]
@@ -1222,9 +1158,6 @@ def walkPlusBusBackEnd(startInput, endInput):
 
 
 # --------------------------------------------------- LRT ROUTING ------------------------------------------------------
-# st = (1.4055940063199879, 103.90233993530273)
-# # en = (1.408543546586684, 103.8985526561737)
-# # lrt(st, en)
 
 def lrtBackEnd(startInput, endInput):
     walkingSrc = startInput
